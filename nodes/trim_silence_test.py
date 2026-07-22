@@ -32,3 +32,11 @@ def test_trim_silence_error_on_malformed_input():
     ax = make_context()
     result = trim_silence(ax, TrimSilenceInput(audio=Audio(data=b"junk", format="")))
     assert result.error != ""
+
+
+def test_trim_silence_rejects_negative_top_db():
+    """Regression test: see the audio-tools 2026-07-21 adversarial review finding."""
+    ax = make_context()
+    wav, _start, _end = padded_tone_wav_bytes()
+    result = trim_silence(ax, TrimSilenceInput(audio=Audio(data=wav, format="wav"), top_db=-5.0))
+    assert result.error != ""

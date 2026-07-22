@@ -2,7 +2,14 @@ import vendor.librosa as librosa
 from gen.messages_pb2 import MfccInput, MfccResult
 from gen.axiom_context import AxiomContext
 
-from nodes._audio_io import AudioDecodeError, decode_audio, to_mono_1d
+from nodes._audio_io import (
+    MAX_N_MFCC,
+    AudioDecodeError,
+    decode_audio,
+    resolve_frame_params,
+    to_mono_1d,
+    validate_coefficient_count,
+)
 
 
 def compute_mfcc(ax: AxiomContext, input: MfccInput) -> MfccResult:
@@ -10,8 +17,11 @@ def compute_mfcc(ax: AxiomContext, input: MfccInput) -> MfccResult:
     speech/audio timbral feature — for a caller-supplied audio clip. Returns
     per-coefficient mean and standard deviation aggregated over all frames
     (not the full n_mfcc x n_frames matrix, to stay well under the transport
-    size cap; frame count scales with clip duration). Multi-channel audio is
-    averaged to mono first. Malformed, empty, or oversized (>3 MiB) input
+    size cap; frame count scales with clip duration). n_mfcc is capped at 128
+    and n_fft/hop_length are bounded so the resulting frame count cannot
+    exceed 100,000 (an ordinary-looking small hop_length would otherwise
+    drive an unbounded allocation). Multi-channel audio is averaged to mono
+    first. Malformed, empty, oversized (>3 MiB), or out-of-range input
     returns a structured error rather than crashing. Wraps librosa's MFCC
     implementation (ISC-licensed, vendored).
     """
@@ -20,16 +30,13 @@ def compute_mfcc(ax: AxiomContext, input: MfccInput) -> MfccResult:
         y, sr, _channels, _bit_depth, _sf = decode_audio(
             audio.data, audio.format, audio.sample_rate, audio.channels, audio.sample_format
         )
+        n_mfcc = validate_coefficient_count(input.n_mfcc, MAX_N_MFCC, "n_mfcc") or 13
+        n_fft, hop_length = resolve_frame_params(input.frame.n_fft, input.frame.hop_length, y.shape[-1])
     except AudioDecodeError as e:
         return MfccResult(error=str(e))
 
     y_mono = to_mono_1d(y)
-    n_mfcc = input.n_mfcc if input.n_mfcc > 0 else 13
-    kwargs = {}
-    if input.frame.n_fft > 0:
-        kwargs["n_fft"] = input.frame.n_fft
-    if input.frame.hop_length > 0:
-        kwargs["hop_length"] = input.frame.hop_length
+    kwargs = {"n_fft": n_fft, "hop_length": hop_length}
 
     try:
         mfcc = librosa.feature.mfcc(y=y_mono, sr=sr, n_mfcc=n_mfcc, **kwargs)

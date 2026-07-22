@@ -33,6 +33,55 @@ MAX_SAMPLES_PER_CHANNEL = 10_000_000
 MAX_CHANNELS = 8
 MAX_SAMPLE_RATE = 384_000
 
+# Bounds on caller-supplied frame/coefficient-count parameters
+# (ComputeStft/ComputeMfcc/ComputeMelSpectrogram/ComputeChroma's FrameParams,
+# and MfccInput.n_mfcc/MelSpectrogramInput.n_mels). Without these, an
+# ordinary-looking small integer — e.g. hop_length=1 on a perfectly normal
+# clip — drives librosa to allocate a frame x frequency-bin matrix that scales
+# inversely with hop_length: at the package's own MAX_SAMPLES_PER_CHANNEL cap,
+# hop_length=1 alone produces a ~80 GB array with no other input needed to
+# look adversarial. Bound the actual cost driver (frame count), not just the
+# raw parameter values, since n_fft/hop_length interact.
+MAX_N_FFT = 65536
+MAX_FRAME_COUNT = 100_000
+MAX_N_MELS = 512
+MAX_N_MFCC = 128
+
+
+def resolve_frame_params(n_fft: int, hop_length: int, n_samples: int):
+    """Validate and default caller-supplied n_fft/hop_length against the
+    actual decoded clip length, bounding the resulting frame count.
+
+    Returns (effective_n_fft, effective_hop_length). Raises AudioDecodeError
+    on an invalid or cost-unsafe combination.
+    """
+    if n_fft < 0 or n_fft > MAX_N_FFT:
+        raise AudioDecodeError(f"n_fft must be in [0, {MAX_N_FFT}] (0 = default 2048)")
+    if hop_length < 0:
+        raise AudioDecodeError("hop_length must be >= 0 (0 = default 512)")
+
+    effective_n_fft = n_fft if n_fft > 0 else 2048
+    effective_hop = hop_length if hop_length > 0 else 512
+    if effective_hop < 1:
+        raise AudioDecodeError("hop_length must be >= 1")
+
+    estimated_frames = int(n_samples // effective_hop) + 1
+    if estimated_frames > MAX_FRAME_COUNT:
+        raise AudioDecodeError(
+            f"n_fft/hop_length would produce an estimated {estimated_frames} frames "
+            f"for this clip, exceeding the {MAX_FRAME_COUNT}-frame cap; use a larger "
+            "hop_length"
+        )
+
+    return effective_n_fft, effective_hop
+
+
+def validate_coefficient_count(n: int, maximum: int, field_name: str) -> int:
+    """Validate a caller-supplied coefficient/band count (n_mfcc/n_mels)."""
+    if n < 0 or n > maximum:
+        raise AudioDecodeError(f"{field_name} must be in [0, {maximum}] (0 = default)")
+    return n
+
 
 class AudioDecodeError(ValueError):
     """Raised for any malformed, oversized, or unsupported audio input.

@@ -8,19 +8,19 @@ nodes:
       input: Audio
       output: AudioInfo
     - name: ComputeMfcc
-      description: Compute Mel-Frequency Cepstral Coefficients (MFCCs) — the standard speech/audio timbral feature — for a caller-supplied audio clip. Returns per-coefficient mean and standard deviation aggregated over all frames (not the full n_mfcc x n_frames matrix, to stay well under the transport size cap). Multi-channel audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB) input returns a structured error. Wraps librosa's MFCC implementation (ISC-licensed, vendored).
+      description: Compute Mel-Frequency Cepstral Coefficients (MFCCs) — the standard speech/audio timbral feature — for a caller-supplied audio clip. Returns per-coefficient mean and standard deviation aggregated over all frames (not the full n_mfcc x n_frames matrix, to stay well under the transport size cap). n_mfcc is capped at 128 and n_fft/hop_length are bounded so the resulting frame count cannot exceed 100,000. Multi-channel audio is averaged to mono first. Malformed, empty, oversized (>3 MiB), or out-of-range input returns a structured error. Wraps librosa's MFCC implementation (ISC-licensed, vendored).
       input: MfccInput
       output: MfccResult
     - name: ComputeMelSpectrogram
-      description: Compute a mel-scaled power spectrogram for a caller-supplied audio clip. Returns per-mel-band mean and standard deviation power aggregated over all frames (not the full n_mels x n_frames matrix). Multi-channel audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB) input returns a structured error. Wraps librosa's mel-spectrogram implementation (ISC-licensed, vendored).
+      description: Compute a mel-scaled power spectrogram for a caller-supplied audio clip. Returns per-mel-band mean and standard deviation power aggregated over all frames (not the full n_mels x n_frames matrix). n_mels is capped at 512 and n_fft/hop_length are bounded so the resulting frame count cannot exceed 100,000. Multi-channel audio is averaged to mono first. Malformed, empty, oversized (>3 MiB), or out-of-range input returns a structured error. Wraps librosa's mel-spectrogram implementation (ISC-licensed, vendored).
       input: MelSpectrogramInput
       output: MelSpectrogramResult
     - name: ComputeStft
-      description: Compute the Short-Time Fourier Transform (STFT) magnitude spectrogram for a caller-supplied audio clip. Returns per-frequency-bin mean and standard deviation magnitude aggregated over all frames, plus each bin's center frequency in Hz — not the full n_freq_bins x n_frames matrix. Multi-channel audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB) input returns a structured error. Wraps librosa's STFT implementation (ISC-licensed, vendored).
+      description: Compute the Short-Time Fourier Transform (STFT) magnitude spectrogram for a caller-supplied audio clip. Returns per-frequency-bin mean and standard deviation magnitude aggregated over all frames, plus each bin's center frequency in Hz — not the full n_freq_bins x n_frames matrix. n_fft/hop_length are bounded so the resulting frame count cannot exceed 100,000. Multi-channel audio is averaged to mono first. Malformed, empty, oversized (>3 MiB), or out-of-range input returns a structured error. Wraps librosa's STFT implementation (ISC-licensed, vendored).
       input: StftInput
       output: StftResult
     - name: ComputeChroma
-      description: Compute a 12-bin chromagram (pitch-class energy — C, C#, D, ... B) for a caller-supplied audio clip, useful for music/key analysis and chord detection. Returns per-pitch-class mean and standard deviation energy aggregated over all frames. Multi-channel audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB) input returns a structured error. Wraps librosa's chroma-STFT implementation (ISC-licensed, vendored).
+      description: Compute a 12-bin chromagram (pitch-class energy — C, C#, D, ... B) for a caller-supplied audio clip, useful for music/key analysis and chord detection. Returns per-pitch-class mean and standard deviation energy aggregated over all frames. n_fft/hop_length are bounded so the resulting frame count cannot exceed 100,000. Multi-channel audio is averaged to mono first. Malformed, empty, oversized (>3 MiB), or out-of-range input returns a structured error. Wraps librosa's chroma-STFT implementation (ISC-licensed, vendored).
       input: ChromaInput
       output: ChromaResult
     - name: EstimateTempo

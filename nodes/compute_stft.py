@@ -2,7 +2,7 @@ import vendor.librosa as librosa
 from gen.messages_pb2 import StftInput, StftResult
 from gen.axiom_context import AxiomContext
 
-from nodes._audio_io import AudioDecodeError, decode_audio, to_mono_1d
+from nodes._audio_io import AudioDecodeError, decode_audio, resolve_frame_params, to_mono_1d
 
 
 def compute_stft(ax: AxiomContext, input: StftInput) -> StftResult:
@@ -10,22 +10,24 @@ def compute_stft(ax: AxiomContext, input: StftInput) -> StftResult:
     for a caller-supplied audio clip. Returns per-frequency-bin mean and
     standard deviation magnitude aggregated over all frames, plus the center
     frequency (Hz) of each bin — not the full n_freq_bins x n_frames matrix,
-    which can exceed the transport size cap for longer clips. Multi-channel
-    audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB)
-    input returns a structured error rather than crashing. Wraps librosa's
-    STFT implementation (ISC-licensed, vendored).
+    which can exceed the transport size cap for longer clips. n_fft/hop_length
+    are bounded so the resulting frame count cannot exceed 100,000 (an
+    ordinary-looking small hop_length would otherwise drive an unbounded
+    allocation). Multi-channel audio is averaged to mono first. Malformed,
+    empty, oversized (>3 MiB), or out-of-range input returns a structured
+    error rather than crashing. Wraps librosa's STFT implementation
+    (ISC-licensed, vendored).
     """
     audio = input.audio
     try:
         y, sr, _channels, _bit_depth, _sf = decode_audio(
             audio.data, audio.format, audio.sample_rate, audio.channels, audio.sample_format
         )
+        n_fft, hop_length = resolve_frame_params(input.frame.n_fft, input.frame.hop_length, y.shape[-1])
     except AudioDecodeError as e:
         return StftResult(error=str(e))
 
     y_mono = to_mono_1d(y)
-    n_fft = input.frame.n_fft if input.frame.n_fft > 0 else 2048
-    hop_length = input.frame.hop_length if input.frame.hop_length > 0 else 512
 
     try:
         stft = librosa.stft(y_mono, n_fft=n_fft, hop_length=hop_length)

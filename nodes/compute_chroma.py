@@ -2,32 +2,32 @@ import vendor.librosa as librosa
 from gen.messages_pb2 import ChromaInput, ChromaResult
 from gen.axiom_context import AxiomContext
 
-from nodes._audio_io import AudioDecodeError, decode_audio, to_mono_1d
+from nodes._audio_io import AudioDecodeError, decode_audio, resolve_frame_params, to_mono_1d
 
 
 def compute_chroma(ax: AxiomContext, input: ChromaInput) -> ChromaResult:
     """Compute a 12-bin chromagram (pitch-class energy: C, C#, D, ... B) for
     a caller-supplied audio clip — useful for music/key analysis and chord
     detection. Returns per-pitch-class mean and standard deviation energy
-    aggregated over all frames (not the full 12 x n_frames matrix). Multi-
-    channel audio is averaged to mono first. Malformed, empty, or oversized
-    (>3 MiB) input returns a structured error rather than crashing. Wraps
-    librosa's chroma-STFT implementation (ISC-licensed, vendored).
+    aggregated over all frames (not the full 12 x n_frames matrix).
+    n_fft/hop_length are bounded so the resulting frame count cannot exceed
+    100,000 (an ordinary-looking small hop_length would otherwise drive an
+    unbounded allocation). Multi-channel audio is averaged to mono first.
+    Malformed, empty, oversized (>3 MiB), or out-of-range input returns a
+    structured error rather than crashing. Wraps librosa's chroma-STFT
+    implementation (ISC-licensed, vendored).
     """
     audio = input.audio
     try:
         y, sr, _channels, _bit_depth, _sf = decode_audio(
             audio.data, audio.format, audio.sample_rate, audio.channels, audio.sample_format
         )
+        n_fft, hop_length = resolve_frame_params(input.frame.n_fft, input.frame.hop_length, y.shape[-1])
     except AudioDecodeError as e:
         return ChromaResult(error=str(e))
 
     y_mono = to_mono_1d(y)
-    kwargs = {}
-    if input.frame.n_fft > 0:
-        kwargs["n_fft"] = input.frame.n_fft
-    if input.frame.hop_length > 0:
-        kwargs["hop_length"] = input.frame.hop_length
+    kwargs = {"n_fft": n_fft, "hop_length": hop_length}
 
     try:
         chroma = librosa.feature.chroma_stft(y=y_mono, sr=sr, **kwargs)

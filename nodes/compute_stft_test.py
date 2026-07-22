@@ -1,4 +1,4 @@
-from gen.messages_pb2 import Audio, StftInput
+from gen.messages_pb2 import Audio, FrameParams, StftInput
 from nodes.compute_stft import compute_stft
 from nodes._test_fixtures import make_context, sine_wav_bytes
 
@@ -24,3 +24,35 @@ def test_compute_stft_error_on_malformed_input():
     result = compute_stft(ax, StftInput(audio=Audio(data=b"junk", format="")))
     assert result.error != ""
     assert result.n_frames == 0
+
+
+def test_compute_stft_rejects_tiny_hop_length_that_would_explode_frame_count():
+    """Regression test: an ordinary-looking small hop_length (not an
+    obviously-adversarial payload) must not be allowed to drive an unbounded
+    allocation — see the audio-tools 2026-07-21 adversarial review finding."""
+    ax = make_context()
+    wav = sine_wav_bytes(freq=440.0, sr=22050, duration=5.0)
+    result = compute_stft(
+        ax, StftInput(audio=Audio(data=wav, format="wav"), frame=FrameParams(hop_length=1))
+    )
+    assert result.error != ""
+    assert result.n_frames == 0
+
+
+def test_compute_stft_rejects_oversized_n_fft():
+    ax = make_context()
+    wav = sine_wav_bytes(sr=22050, duration=0.5)
+    result = compute_stft(
+        ax, StftInput(audio=Audio(data=wav, format="wav"), frame=FrameParams(n_fft=1_000_000))
+    )
+    assert result.error != ""
+
+
+def test_compute_stft_reasonable_hop_length_still_works():
+    ax = make_context()
+    wav = sine_wav_bytes(freq=440.0, sr=22050, duration=0.5)
+    result = compute_stft(
+        ax, StftInput(audio=Audio(data=wav, format="wav"), frame=FrameParams(n_fft=1024, hop_length=256))
+    )
+    assert result.error == ""
+    assert result.n_frames > 0

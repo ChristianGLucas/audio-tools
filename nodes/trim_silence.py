@@ -34,6 +34,8 @@ def trim_silence(ax: AxiomContext, input: TrimSilenceInput) -> TrimSilenceResult
     except AudioDecodeError as e:
         return TrimSilenceResult(error=str(e))
 
+    if input.top_db < 0:
+        return TrimSilenceResult(error="top_db must be >= 0 (0 = default 60 dB)")
     top_db = input.top_db if input.top_db > 0 else 60.0
 
     if float(np.max(np.abs(y))) < _ABSOLUTE_SILENCE_THRESHOLD:
