@@ -1,0 +1,42 @@
+# Runtime deps, fully pinned for deterministic builds. All permissive.
+#
+# librosa itself (0.9.2, ISC) is VENDORED under vendor/librosa (see
+# vendor/librosa/LICENSE.md) rather than pulled from PyPI, and patched in two
+# files (vendor/librosa/util/files.py, vendor/librosa/core/audio.py — see the
+# "christiangeorgelucas/audio-tools patch" comments in both) to drop its
+# unconditional imports of `pooch` and `soundfile`/`audioread`:
+#   - `pooch` (used only to fetch bundled demo recordings over HTTPS, which
+#     this offline/deterministic package never does) declares a hard,
+#     unconditional dependency on `requests`, which pulls in `certifi`
+#     (MPL-2.0) — copyleft, and would land in the installed closure even
+#     though never imported.
+#   - `soundfile`'s PyPI wheel bundles a compiled libsndfile.so binary
+#     (LGPL-2.1) plus libmp3lame/libmpg123 (LGPL) codec plugins. audio-tools
+#     decodes caller-supplied WAV/PCM bytes itself with Python's stdlib
+#     `wave` module (nodes/_audio_io.py) and hands librosa a plain (y, sr)
+#     numpy array, so librosa never needs to open a file itself.
+# Pinning librosa==0.9.2 (rather than newer 0.10.x/0.11.x) also avoids a
+# separate, unconditional hard dependency those versions added on `soxr`
+# (LGPL-2.1-or-later) for high-quality resampling; 0.9.2 uses `resampy`
+# (ISC) instead, which is what we pin below.
+#
+# Full license audit of the resulting installed closure (verified via
+# `pip-licenses` against a from-scratch venv built from exactly this file):
+#   numpy           BSD-3-Clause (and 0BSD/MIT/Zlib/CC0-1.0 for vendored bits)
+#   scipy           BSD-3-Clause
+#   scikit-learn    BSD-3-Clause
+#   joblib          BSD-3-Clause
+#   decorator       BSD-2-Clause
+#   resampy         ISC
+#   numba           BSD-2-Clause
+#   llvmlite        BSD-2-Clause AND Apache-2.0 WITH LLVM-exception (pulled by numba)
+#   threadpoolctl   BSD-3-Clause (pulled by scikit-learn)
+#   narwhals        MIT           (pulled by scikit-learn)
+# No copyleft (GPL/AGPL/LGPL/MPL) anywhere in this tree.
+numpy==2.4.6
+scipy==1.18.0
+scikit-learn==1.9.0
+joblib==1.5.3
+decorator==5.3.1
+resampy==0.4.3
+numba==0.66.0

@@ -1,0 +1,328 @@
+// This file defines the data contracts (messages) for your Axiom package.
+// Every node's --input and --output refers to a message defined here.
+//
+// Run `axiom create message <Name>` to scaffold a new message below.
+// Run `axiom generate` to compile these definitions into language bindings in gen/.
+//
+// DOCUMENTATION
+//   Comments written directly above a message or field declaration are extracted
+//   automatically at publish time and shown in the Axiom registry as documentation.
+//   Write your descriptions there — no separate doc files needed.
+//
+//   Leading comment  (no blank line before the declaration) → registry description ✓
+//   Detached comment (blank line before the declaration)    → ignored by registry  ✗
+//
+// This file is yours to edit. Axiom only appends new message blocks — it never
+// overwrites or removes content you have written.
+
+syntax = "proto3";
+
+package christiangeorgelucas.audio_tools;
+
+// Canonical audio envelope, used as both input and output across every node
+// in this package (mirrors the christiangeorgelucas/image-tools `Image`
+// pattern). On input, `data` is a caller-supplied clip — either raw WAV
+// (RIFF/WAVE) file bytes, or raw interleaved PCM samples — capped at 3 MiB.
+// On output (Resample/ConvertToMono/TrimSilence), `data` is always 16-bit
+// PCM WAV bytes with `format` set to "wav".
+message Audio {
+  // Audio bytes (base64-encoded over the JSON bridge). For format="wav", a
+  // complete WAV/RIFF file. For format="pcm", raw interleaved samples with
+  // no container/header — sample_rate, channels, and sample_format below
+  // must all be set. Capped at 3 MiB; larger input returns a structured error.
+  bytes data = 1;
+  // "wav" or "pcm". If empty on input, auto-detected from `data`'s leading
+  // RIFF/WAVE magic bytes (treated as "wav" if present, otherwise an error).
+  // Always set on output.
+  string format = 2;
+  // Sample rate in Hz. REQUIRED on input when format="pcm" (ignored for
+  // "wav" — read from the container header instead). Always set on output.
+  int32 sample_rate = 3;
+  // Channel count. REQUIRED on input when format="pcm" (ignored for "wav" —
+  // read from the container header instead). Always set on output.
+  int32 channels = 4;
+  // Sample encoding for format="pcm": one of "int16" (default), "int32", or
+  // "float32". REQUIRED on input when format="pcm" and not int16. Ignored
+  // for "wav". Not populated on output (output is always 16-bit PCM WAV).
+  string sample_format = 5;
+  // Structured error message; empty on success. Set (with all other fields
+  // at their zero value) instead of raising on malformed, empty, or
+  // oversized input. Only meaningful on output (ResampleAudio/ConvertToMono).
+  string error = 6;
+}
+
+// Output of GetAudioInfo: the audio's basic decoded properties.
+message AudioInfo {
+  // Sample rate in Hz, as read from the input.
+  int32 sample_rate = 1;
+  // Number of channels (1 = mono, 2 = stereo, ...).
+  int32 channels = 2;
+  // Total number of samples per channel.
+  int32 num_samples = 3;
+  // Duration in seconds (num_samples / sample_rate).
+  double duration_seconds = 4;
+  // Bits per sample as decoded (8/16/24/32 for WAV; 16/32 for PCM
+  // int16/int32; 32 for PCM float32).
+  int32 bit_depth = 5;
+  // Sample encoding actually used to decode: "wav-pcm" or the input's
+  // sample_format for "pcm" input.
+  string sample_format = 6;
+  // Structured error message; empty on success. Set (with all other fields
+  // at their zero value) instead of raising on malformed, empty, or
+  // oversized input.
+  string error = 7;
+}
+
+// Shared frame-windowing parameters accepted by most spectral/feature nodes.
+// All are optional; 0 means "use librosa's default" (n_fft=2048, hop_length=512).
+message FrameParams {
+  // FFT window size in samples. 0 = default (2048).
+  int32 n_fft = 1;
+  // Hop length in samples between successive frames. 0 = default (512).
+  int32 hop_length = 2;
+}
+
+// Input for ComputeMfcc.
+message MfccInput {
+  Audio audio = 1;
+  // Number of MFCC coefficients to compute. 0 = default (13).
+  int32 n_mfcc = 2;
+  FrameParams frame = 3;
+}
+
+// Output of ComputeMfcc: per-coefficient statistics aggregated over time,
+// not the full (n_mfcc x n_frames) matrix — see the package description for
+// why full time-resolved matrices aren't returned by default.
+message MfccResult {
+  // Per-coefficient mean over all frames, length n_mfcc.
+  repeated double coefficient_mean = 1;
+  // Per-coefficient standard deviation over all frames, length n_mfcc.
+  repeated double coefficient_std = 2;
+  int32 n_mfcc = 3;
+  int32 n_frames = 4;
+  // Structured error message; empty on success. Set instead of raising on
+  // malformed, empty, or oversized input.
+  string error = 5;
+}
+
+// Input for ComputeMelSpectrogram.
+message MelSpectrogramInput {
+  Audio audio = 1;
+  // Number of mel bands. 0 = default (128).
+  int32 n_mels = 2;
+  FrameParams frame = 3;
+}
+
+// Output of ComputeMelSpectrogram: per-band statistics (in power, not dB)
+// aggregated over time, not the full (n_mels x n_frames) matrix.
+message MelSpectrogramResult {
+  // Per-mel-band mean power over all frames, length n_mels.
+  repeated double band_mean = 1;
+  // Per-mel-band standard deviation of power over all frames, length n_mels.
+  repeated double band_std = 2;
+  int32 n_mels = 3;
+  int32 n_frames = 4;
+  // Structured error message; empty on success. Set instead of raising on
+  // malformed, empty, or oversized input.
+  string error = 5;
+}
+
+// Input for ComputeStft.
+message StftInput {
+  Audio audio = 1;
+  FrameParams frame = 2;
+}
+
+// Output of ComputeStft: per-frequency-bin magnitude statistics aggregated
+// over time, not the full (n_freq_bins x n_frames) matrix.
+message StftResult {
+  // Per-frequency-bin mean magnitude over all frames, length n_freq_bins.
+  repeated double magnitude_mean = 1;
+  // Per-frequency-bin standard deviation of magnitude, length n_freq_bins.
+  repeated double magnitude_std = 2;
+  int32 n_freq_bins = 3;
+  int32 n_frames = 4;
+  // Frequency in Hz represented by each bin index (length n_freq_bins).
+  repeated double bin_frequencies_hz = 5;
+  // Structured error message; empty on success. Set instead of raising on
+  // malformed, empty, or oversized input.
+  string error = 6;
+}
+
+// Input for ComputeChroma.
+message ChromaInput {
+  Audio audio = 1;
+  FrameParams frame = 2;
+}
+
+// Output of ComputeChroma: per-pitch-class (12-bin chromagram) statistics
+// aggregated over time, not the full (12 x n_frames) matrix.
+message ChromaResult {
+  // Per-pitch-class mean energy over all frames, always length 12 (C, C#, D, ... B).
+  repeated double pitch_class_mean = 1;
+  // Per-pitch-class standard deviation of energy, always length 12.
+  repeated double pitch_class_std = 2;
+  int32 n_frames = 3;
+  // Structured error message; empty on success. Set instead of raising on
+  // malformed, empty, or oversized input.
+  string error = 4;
+}
+
+// Output of EstimateTempo.
+message TempoResult {
+  // Estimated global tempo in beats per minute.
+  double bpm = 1;
+  // Structured error message; empty on success. Set instead of raising on
+  // malformed, empty, or oversized input.
+  string error = 2;
+}
+
+// Output of DetectBeats.
+message BeatsResult {
+  // Estimated beat onset times, in seconds from the start of the clip.
+  repeated double beat_times_seconds = 1;
+  int32 count = 2;
+  // Estimated global tempo in beats per minute (a byproduct of beat tracking).
+  double bpm = 3;
+  // Structured error message; empty on success. Set instead of raising on
+  // malformed, empty, or oversized input.
+  string error = 4;
+}
+
+// Output of DetectOnsets.
+message OnsetsResult {
+  // Detected onset event times, in seconds from the start of the clip.
+  repeated double onset_times_seconds = 1;
+  int32 count = 2;
+  // Structured error message; empty on success. Set instead of raising on
+  // malformed, empty, or oversized input.
+  string error = 3;
+}
+
+// Input for EstimatePitch.
+message PitchInput {
+  Audio audio = 1;
+  // Lower bound of the pitch search range in Hz. 0 = default (~65.4 Hz, C2).
+  double fmin_hz = 2;
+  // Upper bound of the pitch search range in Hz. 0 = default (~2093 Hz, C7).
+  double fmax_hz = 3;
+}
+
+// Output of EstimatePitch: a per-frame fundamental-frequency (f0) track via
+// pYIN. Frame count is bounded by clip duration (hop_length=512 default), so
+// the full track — not a summary — is returned.
+message PitchResult {
+  // Estimated f0 in Hz for each frame; unvoiced frames report the
+  // algorithm's best-effort estimate too — use voiced_flag to distinguish
+  // voiced from unvoiced frames.
+  repeated double f0_hz = 1;
+  // Whether each frame was classified as voiced (pitched), same length as f0_hz.
+  repeated bool voiced_flag = 2;
+  // Mean f0 over voiced frames only, in Hz. 0 if no frame was voiced.
+  double mean_voiced_f0_hz = 3;
+  // Median f0 over voiced frames only, in Hz. 0 if no frame was voiced.
+  double median_voiced_f0_hz = 4;
+  int32 n_frames = 5;
+  int32 n_voiced_frames = 6;
+  // Structured error message; empty on success. Set instead of raising on
+  // malformed, empty, or oversized input.
+  string error = 7;
+}
+
+// Output of ComputeSpectralFeatures: several standard timbral descriptors,
+// each aggregated (mean/std) over time.
+message SpectralFeaturesResult {
+  double centroid_mean_hz = 1;
+  double centroid_std_hz = 2;
+  double bandwidth_mean_hz = 3;
+  double bandwidth_std_hz = 4;
+  double rolloff_mean_hz = 5;
+  double rolloff_std_hz = 6;
+  // Spectral flatness in [0, 1] (1 = pure noise, 0 = pure tone).
+  double flatness_mean = 7;
+  double flatness_std = 8;
+  // Per-octave-band spectral contrast, mean over time (length 7: 6 bands + residual).
+  repeated double contrast_mean = 9;
+  repeated double contrast_std = 10;
+  int32 n_frames = 11;
+  // Structured error message; empty on success. Set instead of raising on
+  // malformed, empty, or oversized input.
+  string error = 12;
+}
+
+// Output of ComputeZeroCrossingRate.
+message ZcrResult {
+  double mean = 1;
+  double std = 2;
+  int32 n_frames = 3;
+  // Structured error message; empty on success. Set instead of raising on
+  // malformed, empty, or oversized input.
+  string error = 4;
+}
+
+// Output of ComputeRmsEnergy.
+message RmsResult {
+  double mean = 1;
+  double std = 2;
+  double max = 3;
+  int32 n_frames = 4;
+  // Structured error message; empty on success. Set instead of raising on
+  // malformed, empty, or oversized input.
+  string error = 5;
+}
+
+// Output of ComputeTonnetz.
+message TonnetzResult {
+  // Per-dimension mean tonal-centroid coordinate over time, always length 6.
+  repeated double dimension_mean = 1;
+  // Per-dimension standard deviation, always length 6.
+  repeated double dimension_std = 2;
+  int32 n_frames = 3;
+  // Structured error message; empty on success. Set instead of raising on
+  // malformed, empty, or oversized input.
+  string error = 4;
+}
+
+// Input for ResampleAudio.
+message ResampleInput {
+  Audio audio = 1;
+  // Target sample rate in Hz. Must be a positive integer, capped at 384000.
+  int32 target_sample_rate = 2;
+}
+
+// Input for TrimSilence.
+message TrimSilenceInput {
+  Audio audio = 1;
+  // Threshold, in decibels below the clip's peak, below which audio is
+  // considered silence. 0 = default (60 dB).
+  double top_db = 2;
+}
+
+// Output of TrimSilence.
+message TrimSilenceResult {
+  // The audio with leading/trailing silence removed, as 16-bit PCM WAV.
+  Audio trimmed_audio = 1;
+  // Start of the retained (non-silent) region in the original clip, in seconds.
+  double start_seconds = 2;
+  // End of the retained (non-silent) region in the original clip, in seconds.
+  double end_seconds = 3;
+  // True if the entire clip was below the silence threshold (trimmed_audio
+  // will then be empty/near-empty).
+  bool all_silent = 4;
+  // Structured error message; empty on success. Set instead of raising on
+  // malformed, empty, or oversized input.
+  string error = 5;
+}
+
+// Output of ComputeAudioFingerprint: a fixed-length, deterministic summary
+// feature vector (aggregated MFCC/chroma/spectral/rhythm statistics)
+// suitable for nearest-neighbor similarity search or as a classifier input.
+message FingerprintResult {
+  // The fingerprint vector. Always fixed length (see `dimension`) and in a
+  // fixed field order, so vectors from different clips are directly comparable.
+  repeated double vector = 1;
+  int32 dimension = 2;
+  // Structured error message; empty on success. Set instead of raising on
+  // malformed, empty, or oversized input.
+  string error = 3;
+}
