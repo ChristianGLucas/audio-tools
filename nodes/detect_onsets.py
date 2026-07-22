@@ -9,7 +9,7 @@ def detect_onsets(ax: AxiomContext, input: Audio) -> OnsetsResult:
     """Detect onset events (the start of new sonic events — notes, drum
     hits, transients) in a caller-supplied audio clip, returned as times in
     seconds from the start of the clip. Multi-channel audio is averaged to
-    mono first. Malformed, empty, or oversized (>3 MiB) input returns a
+    mono first. Malformed, or empty input returns a
     structured error rather than crashing. Wraps librosa's onset-strength-
     based onset detector (ISC-licensed, vendored).
     """

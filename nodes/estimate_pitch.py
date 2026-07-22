@@ -14,8 +14,7 @@ def estimate_pitch(ax: AxiomContext, input: PitchInput) -> PitchResult:
     per-frame track is returned (frame count is bounded by clip duration, not
     a large 2D matrix). Unvoiced frames report 0 Hz in f0_hz — use
     voiced_flag to distinguish them from a genuine 0 Hz estimate. Multi-
-    channel audio is averaged to mono first. Malformed, empty, or oversized
-    (>3 MiB) input returns a structured error rather than crashing. Wraps
+    channel audio is averaged to mono first. Malformed, empty input returns a structured error rather than crashing. Wraps
     librosa's pYIN implementation (ISC-licensed, vendored).
     """
     audio = input.audio

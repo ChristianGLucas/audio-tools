@@ -9,9 +9,8 @@ def compute_zero_crossing_rate(ax: AxiomContext, input: Audio) -> ZcrResult:
     """Compute the zero-crossing rate (fraction of sign changes per frame) of
     a caller-supplied audio clip, aggregated (mean/std) over all frames — a
     cheap proxy for noisiness/pitch used in speech and percussion detection.
-    Multi-channel audio is averaged to mono first. Malformed, empty, or
-    oversized (>3 MiB) input returns a structured error rather than
-    crashing. Wraps librosa's zero-crossing-rate implementation
+    Multi-channel audio is averaged to mono first. Malformed or empty
+    input returns a structured error rather than crashing. Wraps librosa's zero-crossing-rate implementation
     (ISC-licensed, vendored).
     """
     try:

@@ -10,8 +10,8 @@ def compute_tonnetz(ax: AxiomContext, input: Audio) -> TonnetzResult:
     audio clip — six dimensions representing the harmonic content projected
     onto the Tonnetz (perfect-fifth, minor-third, and major-third
     relationships) — aggregated (mean/std) over all frames. Multi-channel
-    audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB)
-    input returns a structured error rather than crashing. Wraps librosa's
+    audio is averaged to mono first. Malformed or empty input returns a
+    structured error rather than crashing. Wraps librosa's
     tonnetz implementation (ISC-licensed, vendored).
     """
     try:

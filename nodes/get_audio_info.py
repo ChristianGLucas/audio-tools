@@ -9,7 +9,7 @@ def get_audio_info(ax: AxiomContext, input: Audio) -> AudioInfo:
     samples + sample_rate/channels/sample_format) and report its basic
     properties: sample rate, channel count, total sample count, duration in
     seconds, bit depth, and the sample encoding used to decode it. Malformed,
-    empty, or oversized (>3 MiB) input returns a structured error rather than
+    or empty input returns a structured error rather than
     crashing.
     """
     try:

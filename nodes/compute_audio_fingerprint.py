@@ -12,7 +12,7 @@ def compute_audio_fingerprint(ax: AxiomContext, input: Audio) -> FingerprintResu
     rate, and RMS energy, plus the estimated tempo — 63 dimensions total, in
     a fixed field order, suitable for nearest-neighbor similarity search or
     as a classifier input. Multi-channel audio is averaged to mono first.
-    Malformed, empty, or oversized (>3 MiB) input returns a structured error
+    Malformed, or empty input returns a structured error
     rather than crashing. Wraps librosa's feature-extraction implementations
     (ISC-licensed, vendored).
     """

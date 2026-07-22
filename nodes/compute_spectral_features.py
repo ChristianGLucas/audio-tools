@@ -9,9 +9,8 @@ def compute_spectral_features(ax: AxiomContext, input: Audio) -> SpectralFeature
     """Compute standard timbral spectral descriptors for a caller-supplied
     audio clip — spectral centroid, bandwidth, rolloff, flatness, and
     per-octave-band contrast — each aggregated (mean/std) over all frames.
-    Multi-channel audio is averaged to mono first. Malformed, empty, or
-    oversized (>3 MiB) input returns a structured error rather than
-    crashing. Wraps librosa's spectral-feature implementations
+    Multi-channel audio is averaged to mono first. Malformed or empty
+    input returns a structured error rather than crashing. Wraps librosa's spectral-feature implementations
     (ISC-licensed, vendored).
     """
     try:

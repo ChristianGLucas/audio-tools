@@ -8,7 +8,7 @@ from nodes._audio_io import AudioDecodeError, decode_audio, to_mono_1d
 def estimate_tempo(ax: AxiomContext, input: Audio) -> TempoResult:
     """Estimate the global tempo (beats per minute) of a caller-supplied
     audio clip via onset-strength-based beat tracking. Multi-channel audio
-    is averaged to mono first. Malformed, empty, or oversized (>3 MiB) input
+    is averaged to mono first. Malformed, or empty input
     returns a structured error rather than crashing. Wraps librosa's beat
     tracker (ISC-licensed, vendored); see DetectBeats for individual beat
     timestamps.

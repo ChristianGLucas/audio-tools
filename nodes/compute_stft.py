@@ -9,14 +9,10 @@ def compute_stft(ax: AxiomContext, input: StftInput) -> StftResult:
     """Compute the Short-Time Fourier Transform (STFT) magnitude spectrogram
     for a caller-supplied audio clip. Returns per-frequency-bin mean and
     standard deviation magnitude aggregated over all frames, plus the center
-    frequency (Hz) of each bin — not the full n_freq_bins x n_frames matrix,
-    which can exceed the transport size cap for longer clips. n_fft/hop_length
-    are bounded so the resulting frame count cannot exceed 100,000 (an
-    ordinary-looking small hop_length would otherwise drive an unbounded
-    allocation). Multi-channel audio is averaged to mono first. Malformed,
-    empty, oversized (>3 MiB), or out-of-range input returns a structured
-    error rather than crashing. Wraps librosa's STFT implementation
-    (ISC-licensed, vendored).
+    frequency (Hz) of each bin — not the full n_freq_bins x n_frames matrix.
+    Multi-channel audio is averaged to mono first. Malformed, empty, or
+    out-of-range input returns a structured error rather than crashing.
+    Wraps librosa's STFT implementation (ISC-licensed, vendored).
     """
     audio = input.audio
     try:

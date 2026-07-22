@@ -14,10 +14,9 @@ Built for the Axiom marketplace. License: MIT (see `LICENSE`).
 
 Every node takes a caller-supplied `Audio` clip — either raw WAV
 (RIFF/WAVE) file bytes, or raw interleaved PCM samples plus
-`sample_rate`/`channels`/`sample_format` — capped at 3 MiB, and returns a
-deterministic feature or transform. There is no network access, no
-wall-clock reads, and no randomness: the same input always produces the
-same output.
+`sample_rate`/`channels`/`sample_format` — and returns a deterministic
+feature or transform. There is no network access, no wall-clock reads, and
+no randomness: the same input always produces the same output.
 
 ### Nodes
 
@@ -49,9 +48,7 @@ same output.
 
 Large 2D feature matrices (MFCC, mel-spectrogram, STFT, chroma) are
 returned as per-coefficient/band/bin **mean and standard deviation**
-aggregated over time, not the raw time-resolved matrix — this keeps every
-response well under the platform's transport size cap regardless of clip
-length.
+aggregated over time, not the raw time-resolved matrix.
 
 ## Implementation notes
 

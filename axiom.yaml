@@ -1,73 +1,73 @@
 name: christiangeorgelucas/audio-tools
-version: 0.1.0
+version: 0.1.1
 language: python
-description: Deterministic audio-feature extraction from caller-supplied waveforms (WAV file bytes or raw PCM samples, capped at 3 MiB) — decoding, MFCCs, mel-spectrogram, STFT, chroma, tempo/beat/onset detection, pitch (pYIN), spectral descriptors, zero-crossing rate, RMS energy, tonnetz, resampling, mono conversion, silence trimming, and a fixed-length fingerprint vector — for audio-ML, music-information-retrieval, and transcription-prep agents. Wraps a vendored, license-audited librosa 0.9.2 (ISC) — offline, no network calls, decoding is done with Python's stdlib `wave` module rather than soundfile to avoid librosa's LGPL/MPL-tainted optional dependencies (see requirements.txt for the full audit). Large 2D feature matrices (MFCC, mel-spectrogram, STFT, chroma) are returned as per-coefficient mean/std summaries, not raw time-resolved arrays, to stay under the platform's transport size cap.
+description: Deterministic audio-feature extraction from caller-supplied waveforms (WAV file bytes or raw PCM samples) — decoding, MFCCs, mel-spectrogram, STFT, chroma, tempo/beat/onset detection, pitch (pYIN), spectral descriptors, zero-crossing rate, RMS energy, tonnetz, resampling, mono conversion, silence trimming, and a fixed-length fingerprint vector — for audio-ML, music-information-retrieval, and transcription-prep agents. Wraps a vendored, license-audited librosa 0.9.2 (ISC) — offline, no network calls, decoding is done with Python's stdlib `wave` module rather than soundfile to avoid librosa's LGPL/MPL-tainted optional dependencies (see requirements.txt for the full audit). Large 2D feature matrices (MFCC, mel-spectrogram, STFT, chroma) are returned as per-coefficient mean/std summaries, not raw time-resolved arrays.
 nodes:
     - name: GetAudioInfo
-      description: Decode a caller-supplied audio clip (WAV file bytes, or raw PCM samples + sample_rate/channels/sample_format) and report its basic properties — sample rate, channel count, total sample count, duration in seconds, bit depth, and the sample encoding used to decode it. Malformed, empty, or oversized (>3 MiB) input returns a structured error rather than crashing.
+      description: Decode a caller-supplied audio clip (WAV file bytes, or raw PCM samples + sample_rate/channels/sample_format) and report its basic properties — sample rate, channel count, total sample count, duration in seconds, bit depth, and the sample encoding used to decode it. Malformed or empty input returns a structured error rather than crashing.
       input: Audio
       output: AudioInfo
     - name: ComputeMfcc
-      description: Compute Mel-Frequency Cepstral Coefficients (MFCCs) — the standard speech/audio timbral feature — for a caller-supplied audio clip. Returns per-coefficient mean and standard deviation aggregated over all frames (not the full n_mfcc x n_frames matrix, to stay well under the transport size cap). n_mfcc is capped at 128 and n_fft/hop_length are bounded so the resulting frame count cannot exceed 100,000. Multi-channel audio is averaged to mono first. Malformed, empty, oversized (>3 MiB), or out-of-range input returns a structured error. Wraps librosa's MFCC implementation (ISC-licensed, vendored).
+      description: Compute Mel-Frequency Cepstral Coefficients (MFCCs) — the standard speech/audio timbral feature — for a caller-supplied audio clip. Returns per-coefficient mean and standard deviation aggregated over all frames (not the full n_mfcc x n_frames matrix). Multi-channel audio is averaged to mono first. Malformed, empty, or out-of-range input returns a structured error. Wraps librosa's MFCC implementation (ISC-licensed, vendored).
       input: MfccInput
       output: MfccResult
     - name: ComputeMelSpectrogram
-      description: Compute a mel-scaled power spectrogram for a caller-supplied audio clip. Returns per-mel-band mean and standard deviation power aggregated over all frames (not the full n_mels x n_frames matrix). n_mels is capped at 512 and n_fft/hop_length are bounded so the resulting frame count cannot exceed 100,000. Multi-channel audio is averaged to mono first. Malformed, empty, oversized (>3 MiB), or out-of-range input returns a structured error. Wraps librosa's mel-spectrogram implementation (ISC-licensed, vendored).
+      description: Compute a mel-scaled power spectrogram for a caller-supplied audio clip. Returns per-mel-band mean and standard deviation power aggregated over all frames (not the full n_mels x n_frames matrix). Multi-channel audio is averaged to mono first. Malformed, empty, or out-of-range input returns a structured error. Wraps librosa's mel-spectrogram implementation (ISC-licensed, vendored).
       input: MelSpectrogramInput
       output: MelSpectrogramResult
     - name: ComputeStft
-      description: Compute the Short-Time Fourier Transform (STFT) magnitude spectrogram for a caller-supplied audio clip. Returns per-frequency-bin mean and standard deviation magnitude aggregated over all frames, plus each bin's center frequency in Hz — not the full n_freq_bins x n_frames matrix. n_fft/hop_length are bounded so the resulting frame count cannot exceed 100,000. Multi-channel audio is averaged to mono first. Malformed, empty, oversized (>3 MiB), or out-of-range input returns a structured error. Wraps librosa's STFT implementation (ISC-licensed, vendored).
+      description: Compute the Short-Time Fourier Transform (STFT) magnitude spectrogram for a caller-supplied audio clip. Returns per-frequency-bin mean and standard deviation magnitude aggregated over all frames, plus each bin's center frequency in Hz — not the full n_freq_bins x n_frames matrix. Multi-channel audio is averaged to mono first. Malformed, empty, or out-of-range input returns a structured error. Wraps librosa's STFT implementation (ISC-licensed, vendored).
       input: StftInput
       output: StftResult
     - name: ComputeChroma
-      description: Compute a 12-bin chromagram (pitch-class energy — C, C#, D, ... B) for a caller-supplied audio clip, useful for music/key analysis and chord detection. Returns per-pitch-class mean and standard deviation energy aggregated over all frames. n_fft/hop_length are bounded so the resulting frame count cannot exceed 100,000. Multi-channel audio is averaged to mono first. Malformed, empty, oversized (>3 MiB), or out-of-range input returns a structured error. Wraps librosa's chroma-STFT implementation (ISC-licensed, vendored).
+      description: Compute a 12-bin chromagram (pitch-class energy — C, C#, D, ... B) for a caller-supplied audio clip, useful for music/key analysis and chord detection. Returns per-pitch-class mean and standard deviation energy aggregated over all frames. Multi-channel audio is averaged to mono first. Malformed, empty, or out-of-range input returns a structured error. Wraps librosa's chroma-STFT implementation (ISC-licensed, vendored).
       input: ChromaInput
       output: ChromaResult
     - name: EstimateTempo
-      description: Estimate the global tempo (beats per minute) of a caller-supplied audio clip via onset-strength-based beat tracking. Multi-channel audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB) input returns a structured error. Wraps librosa's beat tracker (ISC-licensed, vendored); see DetectBeats for individual beat timestamps.
+      description: Estimate the global tempo (beats per minute) of a caller-supplied audio clip via onset-strength-based beat tracking. Multi-channel audio is averaged to mono first. Malformed or empty input returns a structured error. Wraps librosa's beat tracker (ISC-licensed, vendored); see DetectBeats for individual beat timestamps.
       input: Audio
       output: TempoResult
     - name: DetectBeats
-      description: Detect individual beat positions (in seconds from the start of the clip) in a caller-supplied audio clip, plus the global tempo estimate that beat tracking produces as a byproduct. Multi-channel audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB) input returns a structured error. Wraps librosa's beat tracker (ISC-licensed, vendored).
+      description: Detect individual beat positions (in seconds from the start of the clip) in a caller-supplied audio clip, plus the global tempo estimate that beat tracking produces as a byproduct. Multi-channel audio is averaged to mono first. Malformed or empty input returns a structured error. Wraps librosa's beat tracker (ISC-licensed, vendored).
       input: Audio
       output: BeatsResult
     - name: DetectOnsets
-      description: Detect onset events (the start of new sonic events — notes, drum hits, transients) in a caller-supplied audio clip, returned as times in seconds from the start of the clip. Multi-channel audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB) input returns a structured error. Wraps librosa's onset-strength-based onset detector (ISC-licensed, vendored).
+      description: Detect onset events (the start of new sonic events — notes, drum hits, transients) in a caller-supplied audio clip, returned as times in seconds from the start of the clip. Multi-channel audio is averaged to mono first. Malformed or empty input returns a structured error. Wraps librosa's onset-strength-based onset detector (ISC-licensed, vendored).
       input: Audio
       output: OnsetsResult
     - name: EstimatePitch
-      description: Estimate the fundamental frequency (f0/pitch) track of a caller-supplied audio clip via the pYIN algorithm, plus a per-frame voiced/unvoiced flag and the mean/median f0 over voiced frames. The full per-frame track is returned (frame count is bounded by clip duration). Unvoiced frames report 0 Hz — use voiced_flag to tell them apart from a genuine 0 Hz estimate. Multi-channel audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB) input, or fmin_hz >= fmax_hz, returns a structured error. Wraps librosa's pYIN implementation (ISC-licensed, vendored).
+      description: Estimate the fundamental frequency (f0/pitch) track of a caller-supplied audio clip via the pYIN algorithm, plus a per-frame voiced/unvoiced flag and the mean/median f0 over voiced frames. The full per-frame track is returned (frame count is bounded by clip duration). Unvoiced frames report 0 Hz — use voiced_flag to tell them apart from a genuine 0 Hz estimate. Multi-channel audio is averaged to mono first. Malformed or empty input, or fmin_hz >= fmax_hz, returns a structured error. Wraps librosa's pYIN implementation (ISC-licensed, vendored).
       input: PitchInput
       output: PitchResult
     - name: ComputeSpectralFeatures
-      description: Compute standard timbral spectral descriptors for a caller-supplied audio clip — spectral centroid, bandwidth, rolloff, flatness, and per-octave-band contrast — each aggregated (mean/std) over all frames. Multi-channel audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB) input returns a structured error. Wraps librosa's spectral-feature implementations (ISC-licensed, vendored).
+      description: Compute standard timbral spectral descriptors for a caller-supplied audio clip — spectral centroid, bandwidth, rolloff, flatness, and per-octave-band contrast — each aggregated (mean/std) over all frames. Multi-channel audio is averaged to mono first. Malformed or empty input returns a structured error. Wraps librosa's spectral-feature implementations (ISC-licensed, vendored).
       input: Audio
       output: SpectralFeaturesResult
     - name: ComputeZeroCrossingRate
-      description: Compute the zero-crossing rate (fraction of sign changes per frame) of a caller-supplied audio clip, aggregated (mean/std) over all frames — a cheap proxy for noisiness/pitch used in speech and percussion detection. Multi-channel audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB) input returns a structured error. Wraps librosa's zero-crossing-rate implementation (ISC-licensed, vendored).
+      description: Compute the zero-crossing rate (fraction of sign changes per frame) of a caller-supplied audio clip, aggregated (mean/std) over all frames — a cheap proxy for noisiness/pitch used in speech and percussion detection. Multi-channel audio is averaged to mono first. Malformed or empty input returns a structured error. Wraps librosa's zero-crossing-rate implementation (ISC-licensed, vendored).
       input: Audio
       output: ZcrResult
     - name: ComputeRmsEnergy
-      description: Compute the root-mean-square (RMS) energy envelope of a caller-supplied audio clip, aggregated (mean/std/max) over all frames — a measure of loudness over time. Multi-channel audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB) input returns a structured error. Wraps librosa's RMS implementation (ISC-licensed, vendored).
+      description: Compute the root-mean-square (RMS) energy envelope of a caller-supplied audio clip, aggregated (mean/std/max) over all frames — a measure of loudness over time. Multi-channel audio is averaged to mono first. Malformed or empty input returns a structured error. Wraps librosa's RMS implementation (ISC-licensed, vendored).
       input: Audio
       output: RmsResult
     - name: ComputeTonnetz
-      description: Compute the tonnetz (tonal centroid features) of a caller-supplied audio clip — six dimensions representing harmonic content projected onto the Tonnetz (perfect-fifth, minor-third, major-third relationships) — aggregated (mean/std) over all frames. Multi-channel audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB) input returns a structured error. Wraps librosa's tonnetz implementation (ISC-licensed, vendored).
+      description: Compute the tonnetz (tonal centroid features) of a caller-supplied audio clip — six dimensions representing harmonic content projected onto the Tonnetz (perfect-fifth, minor-third, major-third relationships) — aggregated (mean/std) over all frames. Multi-channel audio is averaged to mono first. Malformed or empty input returns a structured error. Wraps librosa's tonnetz implementation (ISC-licensed, vendored).
       input: Audio
       output: TonnetzResult
     - name: ResampleAudio
-      description: Resample a caller-supplied audio clip to a target sample rate, returning the result as 16-bit PCM WAV bytes (base64-encoded). Channel count is preserved. Malformed, empty, or oversized (>3 MiB) input, or a non-positive/unreasonable target_sample_rate, returns a structured error. Wraps librosa's resampler (ISC-licensed, vendored, resampy backend).
+      description: Resample a caller-supplied audio clip to a target sample rate, returning the result as 16-bit PCM WAV bytes (base64-encoded). Channel count is preserved. Malformed or empty input, or a non-positive target_sample_rate, returns a structured error. Wraps librosa's resampler (ISC-licensed, vendored, resampy backend).
       input: ResampleInput
       output: Audio
     - name: ConvertToMono
-      description: Convert a caller-supplied stereo/multi-channel audio clip to mono by averaging its channels, returning the result as 16-bit PCM WAV bytes (base64-encoded). Already-mono input is returned unchanged (still re-encoded as WAV). Malformed, empty, or oversized (>3 MiB) input returns a structured error. Wraps librosa's to_mono implementation (ISC-licensed, vendored).
+      description: Convert a caller-supplied stereo/multi-channel audio clip to mono by averaging its channels, returning the result as 16-bit PCM WAV bytes (base64-encoded). Already-mono input is returned unchanged (still re-encoded as WAV). Malformed or empty input returns a structured error. Wraps librosa's to_mono implementation (ISC-licensed, vendored).
       input: Audio
       output: Audio
     - name: TrimSilence
-      description: Trim leading and trailing silence from a caller-supplied audio clip (audio below top_db decibels relative to the clip's peak). Returns the trimmed audio as 16-bit PCM WAV bytes plus the start/end boundaries (seconds) of the retained region in the original clip. Channel count is preserved; if the entire clip is below the silence threshold, all_silent is set. Malformed, empty, or oversized (>3 MiB) input returns a structured error. Wraps librosa's silence-trimming implementation (ISC-licensed, vendored).
+      description: Trim leading and trailing silence from a caller-supplied audio clip (audio below top_db decibels relative to the clip's peak). Returns the trimmed audio as 16-bit PCM WAV bytes plus the start/end boundaries (seconds) of the retained region in the original clip. Channel count is preserved; if the entire clip is below the silence threshold, all_silent is set. Malformed or empty input returns a structured error. Wraps librosa's silence-trimming implementation (ISC-licensed, vendored).
       input: TrimSilenceInput
       output: TrimSilenceResult
     - name: ComputeAudioFingerprint
-      description: Compute a fixed-length, deterministic summary feature vector for a caller-supplied audio clip — mean/std of 13 MFCCs, 12 chroma bins, spectral centroid/bandwidth/rolloff/flatness, zero-crossing rate, and RMS energy, plus estimated tempo — 63 dimensions total in a fixed field order, suitable for nearest-neighbor similarity search or as a classifier input. Multi-channel audio is averaged to mono first. Malformed, empty, or oversized (>3 MiB) input returns a structured error. Wraps librosa's feature-extraction implementations (ISC-licensed, vendored).
+      description: Compute a fixed-length, deterministic summary feature vector for a caller-supplied audio clip — mean/std of 13 MFCCs, 12 chroma bins, spectral centroid/bandwidth/rolloff/flatness, zero-crossing rate, and RMS energy, plus estimated tempo — 63 dimensions total in a fixed field order, suitable for nearest-neighbor similarity search or as a classifier input. Multi-channel audio is averaged to mono first. Malformed or empty input returns a structured error. Wraps librosa's feature-extraction implementations (ISC-licensed, vendored).
       input: Audio
       output: FingerprintResult

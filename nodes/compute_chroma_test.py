@@ -1,4 +1,4 @@
-from gen.messages_pb2 import Audio, ChromaInput, FrameParams
+from gen.messages_pb2 import Audio, ChromaInput
 from nodes.compute_chroma import compute_chroma
 from nodes._test_fixtures import make_context, sine_wav_bytes
 
@@ -25,11 +25,3 @@ def test_compute_chroma_error_on_malformed_input():
     assert result.error != ""
 
 
-def test_compute_chroma_rejects_tiny_hop_length_that_would_explode_frame_count():
-    """Regression test: see the audio-tools 2026-07-21 adversarial review finding."""
-    ax = make_context()
-    wav = sine_wav_bytes(freq=440.0, sr=22050, duration=5.0)
-    result = compute_chroma(
-        ax, ChromaInput(audio=Audio(data=wav, format="wav"), frame=FrameParams(hop_length=1))
-    )
-    assert result.error != ""

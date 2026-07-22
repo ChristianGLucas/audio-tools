@@ -9,7 +9,7 @@ def compute_rms_energy(ax: AxiomContext, input: Audio) -> RmsResult:
     """Compute the root-mean-square (RMS) energy envelope of a caller-
     supplied audio clip, aggregated (mean/std/max) over all frames — a
     measure of loudness over time. Multi-channel audio is averaged to mono
-    first. Malformed, empty, or oversized (>3 MiB) input returns a
+    first. Malformed, or empty input returns a
     structured error rather than crashing. Wraps librosa's RMS
     implementation (ISC-licensed, vendored).
     """

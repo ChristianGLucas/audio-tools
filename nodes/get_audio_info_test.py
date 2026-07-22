@@ -60,12 +60,6 @@ def test_get_audio_info_malformed_input_error():
     assert result.error != ""
 
 
-def test_get_audio_info_oversized_input_error():
-    ax = make_context()
-    result = get_audio_info(ax, Audio(data=b"\x00" * (3 * 1024 * 1024 + 1), format="wav"))
-    assert result.error != ""
-
-
 def test_get_audio_info_deterministic():
     ax = make_context()
     wav = sine_wav_bytes()

@@ -10,12 +10,9 @@ def compute_chroma(ax: AxiomContext, input: ChromaInput) -> ChromaResult:
     a caller-supplied audio clip — useful for music/key analysis and chord
     detection. Returns per-pitch-class mean and standard deviation energy
     aggregated over all frames (not the full 12 x n_frames matrix).
-    n_fft/hop_length are bounded so the resulting frame count cannot exceed
-    100,000 (an ordinary-looking small hop_length would otherwise drive an
-    unbounded allocation). Multi-channel audio is averaged to mono first.
-    Malformed, empty, oversized (>3 MiB), or out-of-range input returns a
-    structured error rather than crashing. Wraps librosa's chroma-STFT
-    implementation (ISC-licensed, vendored).
+    Multi-channel audio is averaged to mono first. Malformed, empty, or
+    out-of-range input returns a structured error rather than crashing.
+    Wraps librosa's chroma-STFT implementation (ISC-licensed, vendored).
     """
     audio = input.audio
     try:

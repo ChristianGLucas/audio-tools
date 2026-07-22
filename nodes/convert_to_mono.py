@@ -9,7 +9,7 @@ def convert_to_mono(ax: AxiomContext, input: Audio) -> Audio:
     """Convert a caller-supplied stereo/multi-channel audio clip to mono by
     averaging its channels, returning the result as 16-bit PCM WAV bytes
     (base64-encoded). Already-mono input is returned unchanged (still
-    re-encoded as WAV). Malformed, empty, or oversized (>3 MiB) input
+    re-encoded as WAV). Malformed, or empty input
     returns a structured error rather than crashing. Wraps librosa's
     to_mono implementation (ISC-licensed, vendored).
     """

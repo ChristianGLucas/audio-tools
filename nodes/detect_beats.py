@@ -9,7 +9,7 @@ def detect_beats(ax: AxiomContext, input: Audio) -> BeatsResult:
     """Detect individual beat positions (in seconds from the start of the
     clip) in a caller-supplied audio clip, plus the global tempo estimate
     that beat tracking produces as a byproduct. Multi-channel audio is
-    averaged to mono first. Malformed, empty, or oversized (>3 MiB) input
+    averaged to mono first. Malformed, or empty input
     returns a structured error rather than crashing. Wraps librosa's beat
     tracker (ISC-licensed, vendored); see EstimateTempo for the tempo alone.
     """

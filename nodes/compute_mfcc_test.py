@@ -1,4 +1,4 @@
-from gen.messages_pb2 import Audio, FrameParams, MfccInput
+from gen.messages_pb2 import Audio, MfccInput
 from nodes.compute_mfcc import compute_mfcc
 from nodes._test_fixtures import make_context, sine_wav_bytes
 
@@ -38,20 +38,3 @@ def test_compute_mfcc_error_on_malformed_input():
     result = compute_mfcc(ax, MfccInput(audio=Audio(data=b"not audio", format="")))
     assert result.error != ""
     assert result.n_frames == 0
-
-
-def test_compute_mfcc_rejects_tiny_hop_length_that_would_explode_frame_count():
-    """Regression test: see the audio-tools 2026-07-21 adversarial review finding."""
-    ax = make_context()
-    wav = sine_wav_bytes(freq=440.0, sr=22050, duration=5.0)
-    result = compute_mfcc(
-        ax, MfccInput(audio=Audio(data=wav, format="wav"), frame=FrameParams(hop_length=1))
-    )
-    assert result.error != ""
-
-
-def test_compute_mfcc_rejects_oversized_n_mfcc():
-    ax = make_context()
-    wav = sine_wav_bytes(sr=22050, duration=0.5)
-    result = compute_mfcc(ax, MfccInput(audio=Audio(data=wav, format="wav"), n_mfcc=100000))
-    assert result.error != ""

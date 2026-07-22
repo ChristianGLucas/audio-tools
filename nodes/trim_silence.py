@@ -21,9 +21,8 @@ def trim_silence(ax: AxiomContext, input: TrimSilenceInput) -> TrimSilenceResult
     the trimmed audio as 16-bit PCM WAV bytes plus the start/end boundaries
     (in seconds) of the retained region in the original clip. Channel count
     is preserved. If the entire clip is below the silence threshold,
-    all_silent is set and trimmed_audio is empty. Malformed, empty, or
-    oversized (>3 MiB) input returns a structured error rather than
-    crashing. Wraps librosa's silence-trimming implementation (ISC-licensed,
+    all_silent is set and trimmed_audio is empty. Malformed or empty
+    input returns a structured error rather than crashing. Wraps librosa's silence-trimming implementation (ISC-licensed,
     vendored).
     """
     audio = input.audio
